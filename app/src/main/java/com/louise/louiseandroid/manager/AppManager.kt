@@ -1,18 +1,24 @@
-package  com.louise.singlewebview.manager
+package com.louise.louiseandroid.manager
 
 import android.util.Log
 import android.webkit.WebView
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import com.louise.louiseandroid.BuildConfig
 import java.lang.ref.WeakReference
+
 
 object AppManager {
     @Volatile
     private var INSTANCE: AppManager? = null
     val inst: AppManager by lazy { getInstance() }
 
-    //    const val baseUrl: String = "http://localhost:3001/TestApp" // local
-    const val baseUrl: String = "https://www.louise.tw/TestApp" // 正式
+    private const val IS_DEBUG = true  // 或使用 BuildConfig.DEBUG
+
+    // 從 BuildConfig 讀取環境變數
+    val baseUrl: String = BuildConfig.BASE_URL
+    val isDebug: Boolean = BuildConfig.IS_DEBUG
+
 
     private val _path = mutableStateOf("/")
     val path: State<String> = _path
@@ -29,10 +35,14 @@ object AppManager {
     // 設定 WebView 實例
     fun setWebView(webView: android.webkit.WebView) {
         this.webViewRef = WeakReference(webView)
+        if (isDebug) {
+            Log.d("AppManager", "WebView 設定完成，當前環境：DEBUG")
+            Log.d("AppManager", "Base URL: $baseUrl")
+        }
     }
 
     fun showWebView(newPath: String) {
-        Log.i("AAA", "changeWebView: $newPath")
+        Log.i("AppManager", "changeWebView: $newPath")
         _path.value = newPath
         // 通知 Web 端使用router.push修改網址
         sendMessageToWeb("pathChanged", """{"path": "$newPath"}""")

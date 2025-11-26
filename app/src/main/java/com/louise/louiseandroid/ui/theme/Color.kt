@@ -1,4 +1,4 @@
-package com.louise.singlewebview.ui.theme
+package com.louise.louiseandroid.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

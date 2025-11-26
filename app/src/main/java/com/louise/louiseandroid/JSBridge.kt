@@ -1,8 +1,8 @@
-package com.louise.singlewebview
+package com.louise.louiseandroid
 
 import android.util.Log
 import android.webkit.JavascriptInterface
-import com.louise.singlewebview.manager.AppManager
+import com.louise.louiseandroid.manager.AppManager
 import org.json.JSONObject
 
 class JSBridge {

@@ -1,6 +1,7 @@
-package com.louise.singlewebview.ui.view
+package com.louise.louiseandroid.ui.view
 
 import android.view.ViewGroup
+import android.webkit.WebSettings
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.layout.Column
@@ -12,8 +13,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
-import com.louise.singlewebview.JSBridge
-import com.louise.singlewebview.manager.AppManager
+import com.louise.louiseandroid.JSBridge
+import com.louise.louiseandroid.manager.AppManager
 
 @Composable
 fun WebView(modifier: Modifier = Modifier, isVisible: Boolean = true) {
@@ -33,7 +34,31 @@ fun WebView(modifier: Modifier = Modifier, isVisible: Boolean = true) {
                 javaScriptEnabled = true
                 // 需要加上這一行 才能從"/"跳轉到"/notifications" 不然跳轉後只會看到白畫面跟vue小工具
                 domStorageEnabled = true  // 啟用 DOM Storage
+
+                // 字體渲染相關（非常重要）
+                loadWithOverviewMode = true
+                useWideViewPort = true
+                loadsImagesAutomatically = true
+
+                // 必須加：否則字重容易失效
+                minimumFontSize = 1
+                textZoom = 100
+
+                // 無論如何都要啟用
+                allowFileAccess = true
+                allowContentAccess = true
+
+                // 高品質渲染
+                setSupportZoom(false)
+                builtInZoomControls = false
+                displayZoomControls = false
+
+                // 最關鍵：避免系統干預字型
+                layoutAlgorithm = WebSettings.LayoutAlgorithm.TEXT_AUTOSIZING
             }
+
+            // 非常重要：強制使用硬體加速，否則字重會被合併
+            setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
 
             addJavascriptInterface(JSBridge(), "AndroidBridge")
 
@@ -41,26 +66,45 @@ fun WebView(modifier: Modifier = Modifier, isVisible: Boolean = true) {
             webViewClient = object : android.webkit.WebViewClient() {
                 override fun onPageFinished(view: android.webkit.WebView?, url: String?) {
                     super.onPageFinished(view, url)
-                    // 注入 JS 模擬 iOS messageHandlers 因為compose沒有messageHandlers
+
+                    val css = """
+        <style>
+        @font-face {
+            font-family: 'NotoSans';
+            src: url('file:///android_asset/fonts/NotoSans-Regular.ttf') format('truetype');
+            font-weight: 400;
+        }
+        @font-face {
+            font-family: 'NotoSans';
+            src: url('file:///android_asset/fonts/NotoSans-Medium.ttf') format('truetype');
+            font-weight: 500;
+        }
+        @font-face {
+            font-family: 'NotoSans';
+            src: url('file:///android_asset/fonts/NotoSans-SemiBold.ttf') format('truetype');
+            font-weight: 600;
+        }
+        @font-face {
+            font-family: 'NotoSans';
+            src: url('file:///android_asset/fonts/NotoSans-Bold.ttf') format('truetype');
+            font-weight: 700;
+        }
+
+        * {
+            font-family: 'NotoSans' !important;
+        }
+        </style>
+    """.trimIndent()
+
                     view?.evaluateJavascript(
                         """
-            if (!window.webkit) {
-                window.webkit = { messageHandlers: {} };
-            }
-            window.webkit.messageHandlers.urlHandler = {
-                postMessage: function(message) {
-                    try {
-                        // 如果傳進來是物件，轉成 JSON 字串
-                        if (typeof message === 'object') {
-                            message = JSON.stringify(message);
-                        }
-                        AndroidBridge.urlHandler(message);
-                    } catch (e) {
-                        console.error("urlHandler error:", e);
-                    }
-                }
-            };
-            """.trimIndent(), null
+        (function() {
+            var style = document.createElement('style');
+            style.innerHTML = `$css`;
+            document.head.appendChild(style);
+        })();
+        """.trimIndent(),
+                        null
                     )
                 }
             }

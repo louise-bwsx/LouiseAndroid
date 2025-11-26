@@ -1,4 +1,4 @@
-package com.louise.singlewebview
+package com.louise.louiseandroid
 
 import org.junit.Test
 
